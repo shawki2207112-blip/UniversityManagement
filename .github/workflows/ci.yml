@@ -9,6 +9,9 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: university-management
     steps:
       - name: Check out code
         uses: actions/checkout@v4
@@ -19,6 +22,7 @@ jobs:
           distribution: temurin
           java-version: '17'
           cache: maven
+          cache-dependency-path: university-management/pom.xml
 
       - name: Run tests
         run: mvn -B verify
