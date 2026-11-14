@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Login - University Management</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <h1>University Management System</h1>
+  <h2>Login</h2>
+
+  <p id="msg" class="error"></p>
+
+  <form id="loginForm">
+    <p><label>Username: <input name="username" required autofocus></label></p>
+    <p><label>Password: <input name="password" type="password" required></label></p>
+    <button type="submit">Login</button>
+  </form>
+
+  <p><small>Demo accounts: admin/admin123, teacher/teacher123, student/student123</small></p>
+
+  <script>
+    document.getElementById('loginForm').onsubmit = async ev => {
+      ev.preventDefault();
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(Object.fromEntries(new FormData(ev.target)))
+      });
+      if (!res.ok) {
+        document.getElementById('msg').textContent = 'Invalid username or password.';
+        return;
+      }
+      const data = await res.json();
+      localStorage.setItem('token', data.token);   // sent as "Authorization: Bearer ..." on every API call
+      location = '/index.html';
+    };
+  </script>
+</body>
+</html>

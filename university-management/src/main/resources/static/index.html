@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>University Management</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <h1>University Management System</h1>
+  <p>Logged in as <b id="who"></b> <button onclick="logout()">Logout</button></p>
+
+  <p>Resource: <select id="type" onchange="load()"></select></p>
+
+  <h3>Add new</h3>
+  <form id="addForm">
+    <input name="username" placeholder="username" required>
+    <input name="password" type="password" placeholder="password" required>
+    <input name="name" placeholder="name">
+    <input name="email" placeholder="email">
+    <button type="submit">Create</button>
+  </form>
+
+  <p id="msg" class="error"></p>
+
+  <h3>List</h3>
+  <table>
+    <thead><tr><th>ID</th><th>Username</th><th>Name</th><th>Email</th><th>Actions</th></tr></thead>
+    <tbody id="rows"></tbody>
+  </table>
+
+  <script>
+    // Which resources each role can see in the dropdown (the server enforces this too).
+    const allowed = { ADMIN: ['admins', 'teachers', 'students'], TEACHER: ['teachers'], STUDENT: ['students'] };
+    const $ = id => document.getElementById(id);
+    const esc = s => String(s ?? '').replace(/[&<>"']/g, c => '&#' + c.charCodeAt(0) + ';');
+    let type;
+
+    function goLogin() { localStorage.removeItem('token'); location = '/login.html'; }
+
+    async function api(method, url, body) {
+      const token = localStorage.getItem('token');
+      if (!token) { goLogin(); throw new Error('Please log in'); }
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: body ? JSON.stringify(body) : undefined
+      });
+      if (res.status === 401) { goLogin(); throw new Error('Please log in'); }
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(res.status + ' ' + (err.message || res.statusText));
+      }
+      return res.status === 204 ? null : res.json();
+    }
+
+    async function init() {
+      const me = await api('GET', '/api/me');
+      $('who').textContent = me.username + ' (' + me.role + ')';
+      $('type').innerHTML = allowed[me.role].map(t => '<option>' + t + '</option>').join('');
+      load();
+    }
+
+    async function load() {
+      type = $('type').value;
+      $('msg').textContent = '';
+      try {
+        const users = await api('GET', '/api/' + type);
+        $('rows').innerHTML = users.map(u =>
+          '<tr><td>' + u.id + '</td><td>' + esc(u.username) + '</td><td>' + esc(u.name) + '</td><td>' + esc(u.email) + '</td>' +
+          '<td><button onclick="edit(' + u.id + ')">Edit</button> <button onclick="del(' + u.id + ')">Delete</button></td></tr>'
+        ).join('');
+      } catch (e) { $('msg').textContent = e.message; }
+    }
+
+    $('addForm').onsubmit = async ev => {
+      ev.preventDefault();
+      try {
+        await api('POST', '/api/' + type, Object.fromEntries(new FormData(ev.target)));
+        ev.target.reset();
+        load();
+      } catch (e) { $('msg').textContent = e.message; }
+    };
+
+    async function edit(id) {
+      try {
+        const u = await api('GET', '/api/' + type + '/' + id);
+        const name = prompt('Name', u.name ?? ''); if (name === null) return;
+        const email = prompt('Email', u.email ?? ''); if (email === null) return;
+        const password = prompt('New password (leave blank to keep the old one)', '');
+        await api('PUT', '/api/' + type + '/' + id, { name, email, password: password || null });
+        load();
+      } catch (e) { $('msg').textContent = e.message; }
+    }
+
+    async function del(id) {
+      if (!confirm('Delete #' + id + '?')) return;
+      try { await api('DELETE', '/api/' + type + '/' + id); load(); }
+      catch (e) { $('msg').textContent = e.message; }
+    }
+
+    async function logout() {
+      try { await api('POST', '/api/auth/logout'); } catch (e) { /* ignore */ }
+      goLogin();
+    }
+
+    init();
+  </script>
+</body>
+</html>
