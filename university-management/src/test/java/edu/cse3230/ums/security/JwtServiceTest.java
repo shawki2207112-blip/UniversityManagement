@@ -11,7 +11,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/** UNIT TESTS 1-3: JwtService on its own (no Spring, no database). */
+/** UNIT TESTS 1-3 */
 class JwtServiceTest {
 
     private static final String SECRET = "unit-test-secret-key-must-be-at-least-32-chars";
@@ -30,8 +30,8 @@ class JwtServiceTest {
 
         Claims claims = jwtService.parse(token);
 
-        assertEquals("admin", claims.getSubject());
-        assertEquals("ADMIN", claims.get("role", String.class));
+        assertEquals("teacher", claims.getSubject());
+        assertEquals("TEACHER", claims.get("role", String.class));
         assertTrue(claims.getExpiration().after(new Date()), "token should not be expired yet");
     }
 
