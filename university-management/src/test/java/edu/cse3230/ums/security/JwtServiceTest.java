@@ -30,8 +30,8 @@ class JwtServiceTest {
 
         Claims claims = jwtService.parse(token);
 
-        assertEquals("teacher", claims.getSubject());
-        assertEquals("TEACHER", claims.get("role", String.class));
+        assertEquals("admin", claims.getSubject());
+        assertEquals("ADMIN", claims.get("role", String.class));
         assertTrue(claims.getExpiration().after(new Date()), "token should not be expired yet");
     }
 
